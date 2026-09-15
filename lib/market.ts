@@ -243,12 +243,19 @@ export function regionCandidatesFromRows(rows: Record<string, string>[]): Region
     }));
 }
 
-/** 후보 중 이름이 사업대상지와 정확히 같은 것을 고른다. 여럿이면 생성일이 가장 늦은 것. */
+/**
+ * 사업대상지 주소에 해당하는 시군구를 고른다.
+ * 주소가 후보 이름과 같거나 "후보 이름 + 공백"으로 시작하면 해당한다. (예: "서울특별시 영등포구 당산동3가" → "서울특별시 영등포구")
+ * 여럿이면 이름이 가장 긴 것(수원시보다 수원시 영통구), 그래도 같으면 생성일이 가장 늦은 것.
+ */
 export function pickRegion(candidates: RegionCandidate[], area: string): RegionCandidate | null {
   const target = area.replace(/\s+/g, " ").trim();
-  const exact = candidates.filter((c) => c.name === target);
-  if (exact.length === 0) return null;
-  return exact.reduce((best, c) => (c.adoptedAt > best.adoptedAt ? c : best));
+  const matches = candidates.filter((c) => target === c.name || target.startsWith(`${c.name} `));
+  if (matches.length === 0) return null;
+  return matches.reduce((best, c) => {
+    if (c.name.length !== best.name.length) return c.name.length > best.name.length ? c : best;
+    return c.adoptedAt > best.adoptedAt ? c : best;
+  });
 }
 
 // ─────────────────────────────────────────────────────────────

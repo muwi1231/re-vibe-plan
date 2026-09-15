@@ -65,7 +65,7 @@ export const fetchSubscriptionList = unstable_cache(
   async (sido: string, sigungu: string, today: string): Promise<SubscriptionList> => {
     const since = yearsAgo(today, 3);
     const conditions: [string, string][] = [
-      ["cond[HSSPLY_ADRES::LIKE]", sigungu],
+      ["cond[HSSPLY_ADRES::LIKE]", sigungu || sido],
       ["cond[RCRIT_PBLANC_DE::GTE]", since],
     ];
     const [aptData, remainderData] = await Promise.all([

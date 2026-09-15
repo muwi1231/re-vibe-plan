@@ -125,9 +125,9 @@ export function PlanApp() {
                 onChange={(sido) => setInput((prev) => ({ ...prev, sido }))}
               />
               <TextField
-                label="사업대상지 · 시군구 (전체 이름)"
+                label="사업대상지 · 시군구 (전체 이름, 읍면동까지 적어도 됨)"
                 value={input.sigungu}
-                placeholder="예: 수원시 영통구"
+                placeholder="예: 영등포구 당산동3가"
                 onChange={(sigungu) => setInput((prev) => ({ ...prev, sigungu }))}
               />
             </div>

@@ -104,6 +104,19 @@ describe("응답 해석 — 기술문서 예제", () => {
     assert.equal(pickRegion(candidates, "경기도 수원시"), null);
   });
 
+  test("법정동코드: 읍면동까지 적은 주소는 앞부분이 일치하는 가장 긴 시군구 (당산동3가 → 영등포구 11560)", () => {
+    const candidates = [
+      { code: "11560", name: "서울특별시 영등포구", adoptedAt: "" },
+      { code: "41110", name: "경기도 수원시", adoptedAt: "19880423" },
+      { code: "41117", name: "경기도 수원시 영통구", adoptedAt: "20031124" },
+    ];
+    assert.equal(pickRegion(candidates, "서울특별시 영등포구 당산동3가")?.code, "11560");
+    assert.equal(pickRegion(candidates, "경기도 수원시 영통구 매탄동 123-4")?.code, "41117");
+    assert.equal(pickRegion(candidates, "경기도 수원시 장안구")?.code, "41110");
+    // 공백 경계가 아니면 일치로 보지 않는다
+    assert.equal(pickRegion(candidates, "서울특별시 영등포구청"), null);
+  });
+
   test("청약홈 주택형별: HOUSE_TY '058.8500A' → 전용 58.85, LTTOT_TOP_AMOUNT '46,357' → 46,357", () => {
     const types = houseTypesFromData([
       { HOUSE_TY: "058.8500A", SUPLY_AR: "80.3800", LTTOT_TOP_AMOUNT: "80720", SUPLY_HSHLDCO: 8, SPSPLY_HSHLDCO: 11 },

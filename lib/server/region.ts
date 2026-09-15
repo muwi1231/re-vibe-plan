@@ -43,42 +43,58 @@ const fetchRegionCandidates = unstable_cache(
 );
 
 export type RegionLookup = {
+  /** 입력한 사업대상지 주소 (공백 정리) */
   area: string;
+  /** 주소가 속한 시군구 */
   matched: RegionCandidate | null;
-  /** 정확히 맞는 지역이 없을 때 고를 수 있는 시군구 후보 */
+  /** 시군구를 못 찾았을 때 고를 수 있는 후보 */
   candidates: RegionCandidate[];
   fetchedAt: string;
 };
 
-/** 사업대상지 이름을 법정동코드로 확인한다. 이름 형식이 틀리면 400. */
+/**
+ * 사업대상지 주소를 법정동코드 시군구로 확인한다. 읍면동·지번까지 적어도 된다.
+ * 형식이 틀리면 400.
+ */
 export async function lookupRegion(areaText: string): Promise<RegionLookup> {
   const parts = splitArea(areaText);
   if (!parts) {
     throw new PublicDataError("사업대상지는 시도 전체 이름과 시군구를 함께 입력하세요.", 400);
   }
   const area = `${parts.sido} ${parts.sigungu}`;
-  const exact = await fetchRegionCandidates(area);
-  const matched = pickRegion(exact.candidates, area);
-  if (matched) return { area, matched, candidates: [], fetchedAt: exact.fetchedAt };
+  const firstName = parts.sigungu.split(" ")[0];
 
-  // 못 찾으면 시군구 마지막 이름으로 넓혀 후보를 보여준다.
-  const lastName = parts.sigungu.split(" ").pop()!;
-  const loose = await fetchRegionCandidates(lastName);
+  // "시도 + 시군구 첫 이름"으로 조회하면 그 아래 구·읍면동 행까지 함께 온다.
+  const scoped = await fetchRegionCandidates(`${parts.sido} ${firstName}`);
+  let matched = pickRegion(scoped.candidates, area);
+  let fetchedAt = scoped.fetchedAt;
+
+  // 세종특별자치시는 시도 자체가 시군구 단위다.
+  if (!matched && parts.sido === "세종특별자치시") {
+    const sido = await fetchRegionCandidates(parts.sido);
+    matched = pickRegion(sido.candidates, area);
+    fetchedAt = sido.fetchedAt;
+  }
+  if (matched) return { area, matched, candidates: [], fetchedAt };
+
+  // 못 찾으면 시군구 첫 이름으로 전국에서 넓혀 후보를 보여준다.
+  const loose = await fetchRegionCandidates(firstName);
   const seen = new Set<string>();
-  const candidates = [...exact.candidates, ...loose.candidates]
+  const candidates = [...scoped.candidates, ...loose.candidates]
     .filter((c) => (seen.has(c.name) ? false : (seen.add(c.name), true)))
     .slice(0, 20);
   return { area, matched: null, candidates, fetchedAt: loose.fetchedAt };
 }
 
-/** 시장 분석 라우트용: 지역을 확인하고, 없으면 404. */
+/** 시장 분석 라우트용: 주소가 속한 시군구를 확인하고, 없으면 404. sido·sigungu는 확인된 시군구 이름 기준. */
 export async function requireRegion(
   areaText: string,
 ): Promise<{ area: string; sido: string; sigungu: string; region: RegionCandidate }> {
   const lookup = await lookupRegion(areaText);
   if (!lookup.matched) {
-    throw new PublicDataError(`법정동코드에서 '${lookup.area}'를 찾지 못했습니다.`, 404);
+    throw new PublicDataError(`법정동코드에서 '${lookup.area}'가 속한 시군구를 찾지 못했습니다.`, 404);
   }
-  const parts = splitArea(lookup.area)!;
-  return { area: lookup.area, ...parts, region: lookup.matched };
+  const name = lookup.matched.name;
+  const parts = splitArea(name) ?? { sido: name, sigungu: "" };
+  return { area: name, ...parts, region: lookup.matched };
 }

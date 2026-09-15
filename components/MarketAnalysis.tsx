@@ -68,7 +68,7 @@ export function MarketAnalysis({ state, summary, plan, onRetry, onRestart, onPic
     <div className="flex flex-col gap-4">
       <div className="rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
         <p>
-          지역 <strong>{region.data.area}</strong> (법정동코드 {matched.code}) · 실거래 기간 {period}
+          사업대상지 <strong>{region.data.area}</strong>{region.data.area !== matched.name && <> → 시군구 <strong>{matched.name}</strong></>} (법정동코드 {matched.code}) · 실거래 기간 {period}
         </p>
         <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 tabular-nums print:hidden">
           <ProgressText label="분양권" progress={summary.presale} unit="개월" />
@@ -93,7 +93,7 @@ export function MarketAnalysis({ state, summary, plan, onRetry, onRestart, onPic
       <TableCard
         title="① 인근 신규 84㎡ 공급평당가 vs 계획가"
         ready={summary.newSupply !== null}
-        area={state.area}
+        area={matched.name}
         count={summary.newSupply ? `주택형 ${formatNumber(summary.newSupply.rows.length)}개` : ""}
         excluded={[...summary.subscriptionMeta.excluded, ...(summary.newSupply?.excluded ?? [])]}
         fetchedAt={summary.subscriptionMeta.fetchedAt}
@@ -106,7 +106,7 @@ export function MarketAnalysis({ state, summary, plan, onRetry, onRestart, onPic
               planPrice={summary.newSupply.planPrice}
               repaymentLimitPrice={plan?.repaymentLimit.price ?? null}
               margin={summary.margin}
-              area={state.area}
+              area={matched.name}
               fetchedAt={summary.subscriptionMeta.fetchedAt}
               source={SOURCE.applyhomeInfo}
             />
@@ -143,7 +143,7 @@ export function MarketAnalysis({ state, summary, plan, onRetry, onRestart, onPic
       <TableCard
         title="② 분양권 웃돈 (입주권 제외)"
         ready={summary.premium !== null}
-        area={state.area}
+        area={matched.name}
         count={
           summary.premium
             ? `거래 ${formatNumber(summary.premium.rows.length)}건 (원자료 ${formatNumber(summary.presaleMeta.rawCount)}건)`
@@ -188,7 +188,7 @@ export function MarketAnalysis({ state, summary, plan, onRetry, onRestart, onPic
       <TableCard
         title="③ 1·2순위 미달 · 잔여세대"
         ready={summary.shortfall !== null}
-        area={state.area}
+        area={matched.name}
         count={
           summary.shortfall
             ? `주택형 ${formatNumber(summary.shortfall.rows.length)}개 · 잔여세대 공고 ${formatNumber(summary.shortfall.remainders.length)}건`
@@ -252,7 +252,7 @@ export function MarketAnalysis({ state, summary, plan, onRetry, onRestart, onPic
       <TableCard
         title="④ 84㎡ 신규 전세 ÷ 우리 84㎡ 세대당 분양가"
         ready={summary.jeonse !== null}
-        area={state.area}
+        area={matched.name}
         count={
           summary.jeonse
             ? `전세 ${formatNumber(summary.jeonse.rows.length)}건 (원자료 ${formatNumber(summary.rentMeta.rawCount)}건)`
